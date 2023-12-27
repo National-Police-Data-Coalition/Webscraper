@@ -1,0 +1,5 @@
+schedule==1.2.1
+redis==5.0.1
+bs4==0.0.1
+requests==2.21.0
+schedule==1.2.1
