@@ -98,7 +98,7 @@ class FiftyA(Scraper):
         precincts = self.find_urls(f"{self.SEED}/commands", self.PRECINT_PATTERN)
         self.logger.info(f"Found {len(precincts)} precincts")
         officers = []
-        for index, precinct in enumerate(precincts[:2]):
+        for index, precinct in enumerate(precincts):
             if index % 10 == 0 and index != 0:
                 self.logger.info(f"Scrapped {index} precincts and have found {len(officers)} officers")
             time.sleep(self.RATE_LIMIT)
@@ -106,7 +106,7 @@ class FiftyA(Scraper):
             
         self.logger.info(f"Found {len(officers)} officers")
         officer_profiles = []
-        for index, officer in enumerate(officers [:2]):
+        for index, officer in enumerate(officers):
             if index % 10 == 0 and index != 0:
                 self.logger.info(f"Scrapped {index} officers and have found {len(officer_profiles)} officer profiles")
             response = self.fetch(f"{self.SEED}{officer}")
