@@ -22,21 +22,22 @@ def main(logger: logging.Logger) -> None:
             continue
         officer.pop("complaints")
 
-        badge = str(officer.get("badge", ""))
-        if not badge:
+        tax_id = str(officer.get("taxId", ""))
+        if not tax_id:
+            logger.warning(f"Could not find tax id for officer {officer['first_name']} {officer['last_name']}")
             continue
-        logger.info(f"Processing officer {badge}")
+        logger.info(f"Processing officer {tax_id}")
         # Check if officer is already in cache
-        if redis_cache.get_json(badge):
-            cached_officer = redis_cache.get_json(badge)
+        if redis_cache.get_json(tax_id):
+            cached_officer = redis_cache.get_json(tax_id)
             if cached_officer == officer:
                 continue
-        logger.info(f"Found new officer {badge}")
+        logger.info(f"Found new officer {tax_id}")
         # If officer is not in cache, add them to cache and publish to queue
         officer["work_history"] = "\r\n".join(officer["work_history"])
-        logger.info(f"Adding officer {badge} to cache")
-        redis_cache.set_json(badge, officer)
-        logger.info(f"Published officer {badge}")
+        logger.info(f"Adding officer {tax_id} to cache")
+        redis_cache.set_json(tax_id, officer)
+        logger.info(f"Published officer {tax_id}")
         redis_pub.publish("officers", json.dumps(officer))
 
 

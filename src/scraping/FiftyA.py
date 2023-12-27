@@ -29,10 +29,17 @@ class FiftyA(Scraper):
  
         soup: Tag |  None  = soup.find("div", class_="identity") # type: ignore
         if not soup:
-            self.logger.error("No identity found for officer")
+            self.logger.error("Could not find identity div")
             return None
-        title = soup.find('h1', class_="title name")
         
+        tax_id = soup.find("span", class_="taxid") 
+        if not tax_id:
+            self.logger.error("No tax id found for officer")
+            return None
+        tax_id = tax_id.text.replace("Tax #", "")
+        
+
+        title = soup.find('h1', class_="title name")        
         if not title:
             self.logger.error("No title found for officer")
             return None
@@ -82,7 +89,8 @@ class FiftyA(Scraper):
             "race": race,
             "gender": gender,
             "work_history": work_history,
-            "age": age
+            "age": age,
+            "taxId": tax_id
         }
 
     def extract_data(self) -> list[dict]:
