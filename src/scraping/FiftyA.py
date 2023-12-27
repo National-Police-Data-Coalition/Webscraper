@@ -1,6 +1,7 @@
 import re
 from bs4 import BeautifulSoup, Tag
 from scraping.Scraper import Scraper
+import logging
 import time
 
 class FiftyA(Scraper):
@@ -9,8 +10,8 @@ class FiftyA(Scraper):
     OFFICER_PATTERN = re.compile(r'^\/officer\/\w+$')
     RATE_LIMIT = 3
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, logger: logging.Logger | None = None):
+        super().__init__(logger=logger)
         self.rate_limit = self.RATE_LIMIT
 
     def __find_officers__(self, precinct: str) -> list[str]:
@@ -37,7 +38,8 @@ class FiftyA(Scraper):
             return None
         title = title.text
         first_name, last_name = title.split(" ") if len(title.split(" ")) < 3  else (title.split(" ")[0], title.split(" ")[2])
-        print(first_name, last_name )
+        self.logger.info(f"Found officer {first_name} {last_name}")
+
 
         description = soup.find("span", class_="desc")
         if not description:
@@ -56,6 +58,8 @@ class FiftyA(Scraper):
         rank = soup.find("span", class_="rank")
         if not rank:
             self.logger.warning(f"No rank found for officer {first_name} {last_name}")
+        else:
+            rank = rank.text
             
         department = soup.find("a", class_="command", href=re.compile(r"^/command/(\w+)$"))
         department = None if not department else department.text
@@ -86,7 +90,7 @@ class FiftyA(Scraper):
         precincts = self.find_urls(f"{self.SEED}/commands", self.PRECINT_PATTERN)
         self.logger.info(f"Found {len(precincts)} precincts")
         officers = []
-        for index, precinct in enumerate(precincts[:10]):
+        for index, precinct in enumerate(precincts[:2]):
             if index % 10 == 0 and index != 0:
                 self.logger.info(f"Scrapped {index} precincts and have found {len(officers)} officers")
             time.sleep(self.RATE_LIMIT)
@@ -94,7 +98,7 @@ class FiftyA(Scraper):
             
         self.logger.info(f"Found {len(officers)} officers")
         officer_profiles = []
-        for index, officer in enumerate(officers [:10]):
+        for index, officer in enumerate(officers [:2]):
             if index % 10 == 0 and index != 0:
                 self.logger.info(f"Scrapped {index} officers and have found {len(officer_profiles)} officer profiles")
             response = self.fetch(f"{self.SEED}{officer}")
