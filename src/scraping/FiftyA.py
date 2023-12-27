@@ -17,6 +17,7 @@ class FiftyA(Scraper):
         """Find all officers in a precinct"""
         precinct_url = f"{self.SEED}{precinct}"
         officers = self.find_urls(precinct_url, self.OFFICER_PATTERN)
+        self.logger.info(f"Found {len(officers)} officers in precinct {precinct}")
         return officers
     
     def __parse_officer_profile__(self, officer_html: str) -> dict | None:
@@ -27,9 +28,12 @@ class FiftyA(Scraper):
  
         soup: Tag |  None  = soup.find("div", class_="identity") # type: ignore
         if not soup:
+            self.logger.error("No identity found for officer")
             return None
         title = soup.find('h1', class_="title name")
+        
         if not title:
+            self.logger.error("No title found for officer")
             return None
         title = title.text
         first_name, last_name = title.split(" ") if len(title.split(" ")) < 3  else (title.split(" ")[0], title.split(" ")[2])
@@ -37,19 +41,32 @@ class FiftyA(Scraper):
 
         description = soup.find("span", class_="desc")
         if not description:
+            self.logger.error("No title found for officer")
             return None
         description = description.text
 
-        race, gender, age = description.replace(",", "").split(" ")
+        officer_descriptions = description.replace(",", "").split(" ")
+        race, gender, age = None, None, None
+        if len(officer_descriptions) == 3:
+            race, gender, age = officer_descriptions
+        else:
+            self.logger.warning(f"Could not parse officer description: {description}")
+
+
         rank = soup.find("span", class_="rank")
-        rank = None if not rank else rank.text
+        if not rank:
+            self.logger.warning(f"No rank found for officer {first_name} {last_name}")
             
         department = soup.find("a", class_="command", href=re.compile(r"^/command/(\w+)$"))
         department = None if not department else department.text
         work_history = [precinct.text for precinct in soup.find_all("a", href=re.compile(r"^/command/(\w+)$")) if precinct.text and precinct.text != department]
 
         badge = soup.find("span", class_="badge")
-        badge = None if not badge else badge.text.replace("Badge #", "")
+        # badge = None if not badge else badge.text.replace("Badge #", "")
+        if not badge:
+            self.logger.warning(f"No badge found for officer {first_name} {last_name}")
+            return None
+        badge = badge.text.replace("Badge #", "")
 
         return {
             "complaints": complaints,
@@ -67,23 +84,22 @@ class FiftyA(Scraper):
     def extract_data(self) -> list[dict]:
         """Extract the officer profiles from 50a"""
         precincts = self.find_urls(f"{self.SEED}/commands", self.PRECINT_PATTERN)
-        print(f"Found {len(precincts)} precincts")
+        self.logger.info(f"Found {len(precincts)} precincts")
         officers = []
-        for index, precinct in enumerate(precincts):
+        for index, precinct in enumerate(precincts[:10]):
             if index % 10 == 0 and index != 0:
-                print(f"Scrapped {index} precincts and have found {len(officers)} officers")
+                self.logger.info(f"Scrapped {index} precincts and have found {len(officers)} officers")
             time.sleep(self.RATE_LIMIT)
             officers += self.__find_officers__(precinct)
-
-        print(f"Found {len(officers)} officers")
-        
+            
+        self.logger.info(f"Found {len(officers)} officers")
         officer_profiles = []
-        for index, officer in enumerate(officers):
+        for index, officer in enumerate(officers [:10]):
             if index % 10 == 0 and index != 0:
-                print(f"Scrapped {index} officers and have found {len(officer_profiles)} profiles")
+                self.logger.info(f"Scrapped {index} officers and have found {len(officer_profiles)} officer profiles")
             response = self.fetch(f"{self.SEED}{officer}")
             if not response: continue
-            officer_profiles.append(self.__parse_officer_profile__(officer))
+            officer_profiles.append(self.__parse_officer_profile__(response))
         return officer_profiles
     
     

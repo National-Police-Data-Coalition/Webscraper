@@ -5,11 +5,18 @@ import logging
 import re
 
 class Scraper:
-    def __init__(self):
+    def __init__(self, logger: logging.Logger | None = None):
         self.headers_list = []
         self.proxy_list = []
-        self.logger = logging.getLogger(__name__)
         self.rate_limit = 5
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        self.logger.addHandler(handler)
 
     def fetch(self, url, retries=3):
         for i in range(retries):
