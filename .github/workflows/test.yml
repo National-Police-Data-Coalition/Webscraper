@@ -32,8 +32,8 @@ jobs:
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
         run: pipenv install --dev
         
-      - name: Install pytest
-        run: pip install pytest
+      - name: Install requirements
+        run: pipenv install -r requirements.txt
     
       - name: Run PyTest
         run: pytest
