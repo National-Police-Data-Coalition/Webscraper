@@ -113,7 +113,8 @@ class FiftyA(Scraper):
             if index % 10 == 0 and index != 0:
                 self.logger.info(f"Scrapped {index} officers and have found {len(officer_profiles)} officer profiles")
             response = self.fetch(f"{self.SEED}{officer}")
-            if not response: continue
+            if not response: 
+                continue
             officer_profiles.append(self.__parse_officer_profile__(response))
         return officer_profiles
     
