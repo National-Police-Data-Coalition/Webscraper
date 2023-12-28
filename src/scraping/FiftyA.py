@@ -6,23 +6,26 @@ import time
 
 class FiftyA(Scraper):
     SEED = "https://www.50-a.org"
-    PRECINT_PATTERN = re.compile(r'^\/command\/\w+$')
-    OFFICER_PATTERN = re.compile(r'^\/officer\/\w+$')
     RATE_LIMIT = 3
 
     def __init__(self, logger: logging.Logger | None = None):
         super().__init__(logger=logger)
         self.rate_limit = self.RATE_LIMIT
+        self.officer_pattern = re.compile(r'^\/officer\/\w+$')
+        self.precint_pattern = re.compile(r'^\/command\/\w+$')
 
     def __find_officers__(self, precinct: str) -> list[str]:
         """Find all officers in a precinct"""
         precinct_url = f"{self.SEED}{precinct}"
-        officers = self.find_urls(precinct_url, self.OFFICER_PATTERN)
+        officers = self.find_urls(precinct_url,  self.officer_pattern)
         self.logger.info(f"Found {len(officers)} officers in precinct {precinct}")
         return officers
     
     def __parse_officer_profile__(self, officer_html: str) -> dict | None:
-        """Parse an officer's profile"""
+        """
+        Parse an officer's profile
+        Returns None if the officer profile is not valid, ie no name, tax id, or description  
+        """
         soup = BeautifulSoup(officer_html, 'html.parser')
         link_pattern = re.compile(r'^\/complaint\/\w+$')
         complaints = list(set([complaint['href'] for complaint in soup.find_all('a', href=link_pattern)]))
@@ -49,17 +52,17 @@ class FiftyA(Scraper):
 
 
         description = soup.find("span", class_="desc")
-        if not description:
-            self.logger.error("No title found for officer")
-            return None
-        description = description.text
-
-        officer_descriptions = description.replace(",", "").split(" ")
         race, gender, age = None, None, None
-        if len(officer_descriptions) == 3:
-            race, gender, age = officer_descriptions
+
+        if not description:
+            self.logger.error("No description found for officer")
         else:
-            self.logger.warning(f"Could not parse officer description: {description}")
+            description = description.text
+            officer_descriptions = description.replace(",", "").split(" ")
+            if len(officer_descriptions) == 3:
+                race, gender, age = officer_descriptions
+            else:
+                self.logger.warning(f"Could not parse officer description: {description}")
 
 
         rank = soup.find("span", class_="rank")
@@ -68,16 +71,16 @@ class FiftyA(Scraper):
         else:
             rank = rank.text
             
-        department = soup.find("a", class_="command", href=re.compile(r"^/command/(\w+)$"))
+        department = soup.find("a", class_="command", href=self.precint_pattern)
         department = None if not department else department.text
-        work_history = [precinct.text for precinct in soup.find_all("a", href=re.compile(r"^/command/(\w+)$")) if precinct.text and precinct.text != department]
+        work_history = [precinct.text for precinct in soup.find_all("a", href=self.precint_pattern) if precinct.text and precinct.text != department]
 
         badge = soup.find("span", class_="badge")
         # badge = None if not badge else badge.text.replace("Badge #", "")
         if not badge:
             self.logger.warning(f"No badge found for officer {first_name} {last_name}")
-            return None
-        badge = badge.text.replace("Badge #", "")
+        else:
+            badge = badge.text.replace("Badge #", "")
 
         return {
             "complaints": complaints,
@@ -95,7 +98,7 @@ class FiftyA(Scraper):
 
     def extract_data(self) -> list[dict]:
         """Extract the officer profiles from 50a"""
-        precincts = self.find_urls(f"{self.SEED}/commands", self.PRECINT_PATTERN)
+        precincts = self.find_urls(f"{self.SEED}/commands", self.precint_pattern)
         self.logger.info(f"Found {len(precincts)} precincts")
         officers = []
         for index, precinct in enumerate(precincts):
