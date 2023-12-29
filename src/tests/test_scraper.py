@@ -1,16 +1,16 @@
 import pytest
 from unittest.mock import patch
-from scraping.Scraper import Scraper
+from scraping.Scraper import ScraperMixin
 
 class TestScraper:
     @pytest.fixture
     def scraper(self):
-        return Scraper()
+        return ScraperMixin()
 
     def test_init(self, scraper):
         assert scraper.rate_limit == 5
 
-    @patch.object(Scraper, 'fetch')
+    @patch.object(ScraperMixin, 'fetch')
     def test_fetch(self, mock_fetch, scraper):
         # Arrange
         mock_fetch.return_value = 'response'
@@ -23,7 +23,7 @@ class TestScraper:
         mock_fetch.assert_called_once_with(url)
         assert result == 'response'
 
-    @patch.object(Scraper, 'find_urls')
+    @patch.object(ScraperMixin, 'find_urls')
     def test_find_urls(self, mock_find_urls, scraper):
         # Arrange
         mock_find_urls.return_value = ['http://test.com/page1', 'http://test.com/page2']

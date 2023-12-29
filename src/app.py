@@ -20,9 +20,8 @@ def main(logger: logging.Logger) -> None:
     for officer in officers:
         if not officer:
             continue
-        officer.pop("complaints")
 
-        tax_id = str(officer.get("taxId", ""))
+        tax_id = str(officer.get("tax_id", ""))
         if not tax_id:
             logger.warning(f"Could not find tax id for officer {officer['first_name']} {officer['last_name']}")
             continue

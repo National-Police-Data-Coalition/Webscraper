@@ -4,7 +4,7 @@ import time
 import logging
 import re
 
-class Scraper:
+class ScraperMixin:
     def __init__(self, logger: logging.Logger | None = None):
         self.headers_list = []
         self.proxy_list = []
@@ -37,6 +37,7 @@ class Scraper:
     def find_urls(self, url, pattern: re.Pattern):
         response = self.fetch(url)
         if not response:
+            self.logger.error(f"Could not fetch {url}")
             return []
         soup = BeautifulSoup(response, 'html.parser')
         return [link['href'] for link in soup.find_all('a', href=pattern) if link['href']]
