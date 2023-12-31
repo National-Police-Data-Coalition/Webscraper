@@ -1,39 +1,58 @@
 import pytest
 from unittest.mock import patch
-from scraping.FiftyA import FiftyA
+from scraping.FiftyA.FiftyA import FiftyA
+from scraping.FiftyA.FiftyAOfficerParser import FiftyAOfficerParser
+from scraping.FiftyA.FiftyAIncidentParser import FiftyAIncidentParser
 
-@patch.object(FiftyA, '__parse_officer_profile__')
-@patch.object(FiftyA, 'fetch')
-@patch.object(FiftyA, 'find_urls')
-def test_extract_data(mock_find_urls, mock_fetch, mock_parse):
-    mock_find_urls.return_value = ['/precinct1', '/precinct2', '/precinct3']
-    mock_fetch.return_value = 'response'
-    mock_parse.return_value = {'officer': 'data'}
-    scraper = FiftyA()
-
-    result = scraper.extract_data()
-
-    assert mock_find_urls.call_count == 1 + len(mock_find_urls.return_value)
-    assert mock_fetch.call_count ==  len(mock_find_urls.return_value) ** 2
-    assert mock_parse.call_count ==  len(mock_find_urls.return_value) ** 2
-    assert result == [mock_parse.return_value] * len(mock_find_urls.return_value) ** 2
 
 @pytest.fixture
 def fiftyA():
     return FiftyA()
 
-def test_find_officers(fiftyA):
-    with patch.object(fiftyA, 'find_urls', return_value=['/officer1', '/officer2']) as mock_find_urls:
-        result = fiftyA.__find_officers__('/precinct1')
-        mock_find_urls.assert_called_once_with(f"{fiftyA.SEED}/precinct1", fiftyA.officer_pattern)
-        assert result == ['/officer1', '/officer2']
 
-def test_parse_officer_profile(fiftyA):
-    mock_response = """
-    <div class="identity">
-            <h1 class="title name">John Doe</h1>
-            <span class="taxid">Tax #123</span>
-    </div>
-    """
-    result = fiftyA.__parse_officer_profile__(mock_response)
-    assert result is not None
+@patch.object(FiftyA, "find_urls")
+def test_find_officers(mock_find_urls, fiftyA):
+    mock_find_urls.return_value = ["/officer1", "/officer2"]
+    result = fiftyA._find_officers("/precinct1")
+    mock_find_urls.assert_called_once_with(
+        f"{fiftyA.SEED}/precinct1", fiftyA.OFFICER_PATTERN
+    )
+    assert result == ["/officer1", "/officer2"]
+
+
+@patch.object(FiftyA, "find_urls")
+def test_extract_data(mock_find_urls, fiftyA):
+    # Mock the return value of find_urls
+    precincts = ["/precinct1", "/precinct2", "/precinct3"]
+    complaints = ["/complaint1"]
+    fake_officer = {
+        "name": "John Doe",
+        "rank": "Officer",
+        "complaints": complaints,
+        "tax_id": "123456789"
+    }
+    mock_find_urls.return_value = precincts
+
+    # Mock the return value of fetch method
+    fiftyA.fetch = lambda url: f"Response for {url}"
+
+    # Mock the officer parser
+    officer_parser = FiftyAOfficerParser( fiftyA.logger)
+    officer_parser.parse_officer = lambda soup: fake_officer
+    FiftyAOfficerParser.__new__ = lambda cls, *args, **kwargs: officer_parser # type: ignore
+
+    # Mock the incident parser
+    incident_parser = FiftyAIncidentParser(None)
+    incident_parser.parse_complaint = lambda response, complaint: {
+        "complaint": complaint,
+        "status": "Open",
+    } # type: ignore
+    
+    FiftyAIncidentParser.__new__ = lambda cls, *args, **kwargs: incident_parser # type: ignore
+
+    # Call the method under test
+    result = fiftyA.extract_data()
+
+    # Assert the expected results
+    assert len(result) == len(precincts) ** 2
+    assert result == [fake_officer] * len(precincts) ** 2
