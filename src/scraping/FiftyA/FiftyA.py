@@ -28,7 +28,7 @@ class FiftyA(ScraperMixin, ParserMixin):
         self.logger.info(f"Found {len(officers)} officers in precinct {precinct}")
         return officers
 
-    def extract_data(self, debug=False) -> list[dict]:
+    def extract_data(self, debug=False) -> tuple[list[dict], list[dict]]:
         """Extract the officer profiles from 50a"""
         precincts = self.find_urls(f"{self.SEED}/commands", self.PRECINT_PATTERN)
         self.logger.info(f"Found {len(precincts)} precincts")
@@ -76,7 +76,7 @@ class FiftyA(ScraperMixin, ParserMixin):
             if not response: 
                 continue
             incidents.append(incident_parser.parse_complaint(response, complaint))
-        return officer_profiles
+        return officer_profiles, incidents
     
     
     

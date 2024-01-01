@@ -6,8 +6,8 @@ from unittest.mock import Mock
 
 @pytest.fixture
 def officer_parser():
-    mock_logger = Mock()
-    return FiftyAOfficerParser(mock_logger)
+    
+    return FiftyAOfficerParser(None)
 
 
 def test_parse_officer_with_valid_soup(officer_parser):
@@ -31,7 +31,7 @@ def test_parse_officer_with_valid_soup(officer_parser):
         "first_name": "John",
         "last_name": "Doe",
         "race": "White",
-        "taxId": "123456789",
+        "tax_id": "123456789",
         "gender": "Male",
         "age": "30",
         "rank": "Officer",
@@ -60,7 +60,7 @@ def test_parse_officer_with_missing_fields(officer_parser):
     expected_result = {
         "first_name": "John",
         "last_name": "Doe",
-        "taxId": "123456789",
+        "tax_id": "123456789",
         "badge": "12345",
         "complaints": [],
         
