@@ -1,6 +1,7 @@
 import re
 import logging
 import time
+import random
 
 from bs4 import BeautifulSoup
 from scraping.Scraper import ScraperMixin
@@ -36,7 +37,7 @@ class FiftyA(ScraperMixin, ParserMixin):
 
 
         if debug:
-            precincts = precincts[:5]
+            precincts = random.sample(precincts, 5)
 
         for index, precinct in enumerate(precincts):
             if index % 10 == 0 and index != 0:
@@ -50,7 +51,7 @@ class FiftyA(ScraperMixin, ParserMixin):
         officer_profiles = []
         complaints = []
         if debug:
-            officers = officers[:5]
+            officers = random.sample(officers, 5)
         officer_parser = FiftyAOfficerParser(self.logger)
         for index, officer in enumerate(officers):
             if index % 10 == 0 and index != 0:
@@ -65,7 +66,7 @@ class FiftyA(ScraperMixin, ParserMixin):
         self.logger.info(f"Found {len(complaints)} complaints")
 
         if debug:
-            complaints = complaints[:5]
+            complaints = random.sample(complaints, 5)
 
         incidents = []
         incident_parser = FiftyAIncidentParser(self.logger)
