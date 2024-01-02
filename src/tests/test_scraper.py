@@ -23,7 +23,7 @@ def test_fetch_error(scraper):
     with requests_mock.Mocker() as m:
         m.get(url, status_code=404)
         result = scraper.fetch(url)
-        assert result == None
+        assert result is None
 
 def test_fetch_retries(scraper):
     url = 'http://test.com'

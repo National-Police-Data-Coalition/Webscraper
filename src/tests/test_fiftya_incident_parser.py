@@ -1,6 +1,5 @@
 import pytest
 from scraping.FiftyA.FiftyAIncidentParser import FiftyAIncidentParser
-from unittest.mock import patch
 from bs4 import BeautifulSoup
 
 @pytest.fixture
